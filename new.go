@@ -5,13 +5,13 @@ import (
 	"os"
 )
 
-// New creates a new lokilogger.Writer with the given configuration.
+// New creates a new flog.Writer with the given configuration.
 //
 // Exxample usage:
 //
-//	    l, err := lokilogger.New(lokilogger.Config{
+//	    l, err := flog.New(flog.Config{
 //	        Output: os.Stdout,
-//	        Loki: logger.LokiConfig{
+//	        Loki: flog.LokiConfig{
 //	            URL:  "http://localhost:3100",
 //	            Path: "/loki/api/v1/push",
 //	            Labels: map[string]string{
