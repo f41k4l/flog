@@ -26,11 +26,11 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	select {
 	case data, ok := <-w.teams:
 		if ok {
-			data += fmt.Sprintf("<br /><code>%s</code>", p)
+			data += fmt.Sprintf("<pre>%s</pre>", p)
 			w.teams <- data
 		}
 	default:
-		w.teams <- fmt.Sprintf("<code>%s</code>", p)
+		w.teams <- fmt.Sprintf("<pre>%s</pre>", p)
 	}
 
 	n, err = w.output.Write(p)
