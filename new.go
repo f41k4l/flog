@@ -34,35 +34,45 @@ func New(config Config) (*Writer, error) {
 	}
 
 	// Initialize Loki
-	loki := &config.Loki
-	if loki.URL == "" {
-		loki = nil
-	} else {
-		if loki.Client == nil {
-			loki.Client = http.DefaultClient
+	loki := make(chan [][]string, 1)
+	if config.Loki.URL != "" {
+		if config.Loki.Client == nil {
+			config.Loki.Client = http.DefaultClient
 		}
+		go func(config LokiConfig, queue chan [][]string, out io.Writer) {
+			for msg := range queue {
+				err := config.writeToLoki(msg)
+				if err != nil {
+					<-queue
+					close(queue)
+					_, _ = out.Write([]byte("[LOKI LOG FAILED] " + err.Error() + "\n"))
+					break
+				}
+			}
+		}(config.Loki, loki, output)
+	} else {
+		close(loki)
 	}
 
 	// Initialize Teams
-	teamsConfig := &config.Teams
-	var teams chan []byte
-	if teamsConfig.Webhook == "" {
-		teamsConfig = nil
-	} else {
-		teams = make(chan []byte, 1)
-		if teamsConfig.Client == nil {
-			teamsConfig.Client = http.DefaultClient
+	teams := make(chan string, 1)
+	if config.Teams.Webhook != "" {
+		if config.Teams.Client == nil {
+			config.Teams.Client = http.DefaultClient
 		}
-		go func(config *TeamsConfig, queue chan []byte, out io.Writer) {
+		go func(config TeamsConfig, queue chan string, out io.Writer) {
 			for msg := range queue {
 				err := config.writeToTeams(msg)
 				if err != nil {
-					_, _ = out.Write([]byte("[TEAMS FAILED] " + err.Error()))
+					<-queue
 					close(queue)
-					return
+					_, _ = out.Write([]byte("[TEAMS LOG FAILED] " + err.Error() + "\n"))
+					break
 				}
 			}
-		}(teamsConfig, teams, output)
+		}(config.Teams, teams, output)
+	} else {
+		close(teams)
 	}
 
 	return &Writer{

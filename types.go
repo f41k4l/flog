@@ -7,8 +7,8 @@ import (
 
 type Writer struct {
 	output io.Writer
-	loki   *LokiConfig
-	teams  chan []byte
+	loki   chan [][]string
+	teams  chan string
 }
 
 type Config struct {

@@ -11,21 +11,26 @@ import (
 
 func (w *Writer) Write(p []byte) (n int, err error) {
 
-	if w.loki != nil {
-		err := w.writeToLoki(p)
-		if err != nil {
-			w.output.Write([]byte("[LOKI FAILED] " + err.Error() + "\n"))
+	// Write to loki
+	select {
+	case data, ok := <-w.loki:
+		if ok {
+			data = append(data, []string{fmt.Sprint(time.Now().UnixNano()), string(p)})
+			w.loki <- data
 		}
+	default:
+		w.loki <- [][]string{{fmt.Sprint(time.Now().UnixNano()), string(p)}}
 	}
 
-	if w.teams != nil {
-		if len(w.teams) > 0 {
-			data := <-w.teams
-			data = append(data, []byte(fmt.Sprintf("<br /><code>%s</code>", p))...)
+	// Write to teams
+	select {
+	case data, ok := <-w.teams:
+		if ok {
+			data += fmt.Sprintf("<br /><code>%s</code>", p)
 			w.teams <- data
-		} else {
-			w.teams <- []byte(fmt.Sprintf("<code>%s</code>", p))
 		}
+	default:
+		w.teams <- fmt.Sprintf("<code>%s</code>", p)
 	}
 
 	n, err = w.output.Write(p)
@@ -36,27 +41,27 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (w *Writer) writeToLoki(p []byte) (err error) {
+func (config *LokiConfig) writeToLoki(p [][]string) (err error) {
 
 	buffer := new(bytes.Buffer)
 	err = json.NewEncoder(buffer).Encode(lokiWriter{
 		Streams: []stream{{
-			Stream: w.loki.Labels,
-			Values: [][]string{{fmt.Sprint(time.Now().UnixNano()), string(p)}},
+			Stream: config.Labels,
+			Values: p,
 		}},
 	})
 	if err != nil {
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, w.loki.URL+w.loki.Path, buffer)
+	req, err := http.NewRequest(http.MethodPost, config.URL+config.Path, buffer)
 	if err != nil {
 		return
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	if w.loki.Headers != nil {
-		for k, v := range w.loki.Headers {
+	if config.Headers != nil {
+		for k, v := range config.Headers {
 			if len(v) == 0 {
 				continue
 			}
@@ -64,7 +69,7 @@ func (w *Writer) writeToLoki(p []byte) (err error) {
 		}
 	}
 
-	resp, err := w.loki.Client.Do(req)
+	resp, err := config.Client.Do(req)
 	if err != nil {
 		return
 	}
@@ -72,18 +77,18 @@ func (w *Writer) writeToLoki(p []byte) (err error) {
 
 	if status := resp.StatusCode; status < 200 || status >= 300 {
 		d, _ := io.ReadAll(resp.Body)
-		err = fmt.Errorf("unexpected status code %d\n%s", status, d)
+		err = fmt.Errorf("unexpected status code %d: %s", status, d)
 	}
 
 	return
 }
 
-func (config *TeamsConfig) writeToTeams(p []byte) (err error) {
+func (config *TeamsConfig) writeToTeams(p string) (err error) {
 
 	buffer := new(bytes.Buffer)
 	err = json.NewEncoder(buffer).Encode(teamsMessage{
 		Title: config.Title,
-		Text:  string(p),
+		Text:  p,
 	})
 	if err != nil {
 		return
@@ -104,7 +109,7 @@ func (config *TeamsConfig) writeToTeams(p []byte) (err error) {
 
 	if status := resp.StatusCode; status < 200 || status >= 300 {
 		d, _ := io.ReadAll(resp.Body)
-		err = fmt.Errorf("unexpected status code %d\n%s", status, d)
+		err = fmt.Errorf("unexpected status code %d: %s", status, d)
 	}
 
 	return
