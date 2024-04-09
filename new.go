@@ -45,11 +45,11 @@ func New(config Config) (*Writer, error) {
 
 	// Initialize Teams
 	teamsConfig := &config.Teams
-	var teamsChannel chan []byte
+	var teams chan []byte
 	if teamsConfig.Webhook == "" {
 		teamsConfig = nil
 	} else {
-		teamsChannel = make(chan []byte, 1)
+		teams = make(chan []byte, 1)
 		if teamsConfig.Client == nil {
 			teamsConfig.Client = http.DefaultClient
 		}
@@ -58,14 +58,16 @@ func New(config Config) (*Writer, error) {
 				err := config.writeToTeams(msg)
 				if err != nil {
 					_, _ = out.Write([]byte("[TEAMS FAILED] " + err.Error()))
+					close(queue)
+					return
 				}
 			}
-		}(teamsConfig, teamsChannel, output)
+		}(teamsConfig, teams, output)
 	}
 
 	return &Writer{
 		output: output,
 		loki:   loki,
-		teams:  teamsChannel,
+		teams:  teams,
 	}, nil
 }
