@@ -32,6 +32,7 @@ func New(config Config) (*Writer, error) {
 		output = os.Stdout
 	}
 
+	// Initialize Loki
 	loki := &config.Loki
 	if loki.URL == "" {
 		loki = nil
@@ -41,8 +42,19 @@ func New(config Config) (*Writer, error) {
 		}
 	}
 
+	// Initialize Teams
+	teams := &config.Teams
+	if teams.Webhook == "" {
+		teams = nil
+	} else {
+		if teams.Client == nil {
+			teams.Client = http.DefaultClient
+		}
+	}
+
 	return &Writer{
 		output: output,
 		loki:   loki,
+		teams:  teams,
 	}, nil
 }
