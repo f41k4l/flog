@@ -43,7 +43,10 @@ func New(config Config) (*Writer, error) {
 			for msg := range queue {
 				err := config.writeToLoki(msg)
 				if err != nil {
-					<-queue
+					select {
+					case <-queue:
+					default:
+					}
 					close(queue)
 					_, _ = out.Write([]byte("[LOKI LOG FAILED] " + err.Error() + "\n"))
 					break
@@ -64,7 +67,10 @@ func New(config Config) (*Writer, error) {
 			for msg := range queue {
 				err := config.writeToTeams(msg)
 				if err != nil {
-					<-queue
+					select {
+					case <-queue:
+					default:
+					}
 					close(queue)
 					_, _ = out.Write([]byte("[TEAMS LOG FAILED] " + err.Error() + "\n"))
 					break
