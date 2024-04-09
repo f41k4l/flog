@@ -1,11 +1,11 @@
 # flog
 
-`flog` is a simple logging client in pure Golang. It is designed to be easy to use and to provide a simple interface for logging messages to the console and to loki instance.
+`flog` is a simple logging client in pure Golang. It is designed to be easy to use and to provide a simple interface for logging messages to the console, loki instance and/or teams channel.
 
 # Usage
 
 ```go
-logger, err := lokilogger.New(flog.Config{
+logger, err := flog.New(flog.Config{
   Output: os.Stdout,
   Loki: flog.LokiConfig{
     URL:  "http://localhost:3100",
@@ -17,6 +17,10 @@ logger, err := lokilogger.New(flog.Config{
       "app": "myapp",
     },
   },
+  Teams: flog.TeamsConfig{
+    Title: "My App",
+    Webhook: "https://example.webhook.office.com/...",
+  },
 })
 if err != nil {
   panic(err)
@@ -24,5 +28,5 @@ if err != nil {
 defer logger.Close()
 
 log.SetOutput(logger)
-log.SetReportTimestamp(false)
+log.Println("Hello, world!")
 ```
