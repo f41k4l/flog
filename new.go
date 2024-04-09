@@ -1,6 +1,7 @@
 package flog
 
 import (
+	"io"
 	"net/http"
 	"os"
 )
@@ -43,18 +44,28 @@ func New(config Config) (*Writer, error) {
 	}
 
 	// Initialize Teams
-	teams := &config.Teams
-	if teams.Webhook == "" {
-		teams = nil
+	teamsConfig := &config.Teams
+	var teamsChannel chan []byte
+	if teamsConfig.Webhook == "" {
+		teamsConfig = nil
 	} else {
-		if teams.Client == nil {
-			teams.Client = http.DefaultClient
+		teamsChannel = make(chan []byte, 1)
+		if teamsConfig.Client == nil {
+			teamsConfig.Client = http.DefaultClient
 		}
+		go func(config *TeamsConfig, queue chan []byte, out io.Writer) {
+			for msg := range queue {
+				err := config.writeToTeams(msg)
+				if err != nil {
+					_, _ = out.Write([]byte("[TEAMS FAILED] " + err.Error()))
+				}
+			}
+		}(teamsConfig, teamsChannel, output)
 	}
 
 	return &Writer{
 		output: output,
 		loki:   loki,
-		teams:  teams,
+		teams:  teamsChannel,
 	}, nil
 }

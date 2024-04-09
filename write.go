@@ -19,12 +19,14 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	}
 
 	if w.teams != nil {
-		go func(writer *Writer) {
-			err := writer.writeToTeams(p)
-			if err != nil {
-				writer.output.Write([]byte("[TEAMS FAILED] " + err.Error() + "\n"))
-			}
-		}(w)
+		if len(w.teams) > 0 {
+			data := <-w.teams
+			data = append(data, []byte("<br />")...)
+			data = append(data, []byte(fmt.Sprintf("<p>%s</p>", p))...)
+			w.teams <- data
+		} else {
+			w.teams <- []byte(fmt.Sprintf("<p>%s</p>", p))
+		}
 	}
 
 	n, err = w.output.Write(p)
@@ -77,25 +79,25 @@ func (w *Writer) writeToLoki(p []byte) (err error) {
 	return
 }
 
-func (w *Writer) writeToTeams(p []byte) (err error) {
+func (config *TeamsConfig) writeToTeams(p []byte) (err error) {
 
 	buffer := new(bytes.Buffer)
 	err = json.NewEncoder(buffer).Encode(teamsMessage{
-		Title: w.teams.Title,
-		Text:  fmt.Sprintf("<code>%s</code>", p),
+		Title: config.Title,
+		Text:  string(p),
 	})
 	if err != nil {
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, w.teams.Webhook, buffer)
+	req, err := http.NewRequest(http.MethodPost, config.Webhook, buffer)
 	if err != nil {
 		return
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := w.teams.Client.Do(req)
+	resp, err := config.Client.Do(req)
 	if err != nil {
 		return
 	}
