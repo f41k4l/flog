@@ -21,11 +21,10 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	if w.teams != nil {
 		if len(w.teams) > 0 {
 			data := <-w.teams
-			data = append(data, []byte("<br />")...)
-			data = append(data, []byte(fmt.Sprintf("<p>%s</p>", p))...)
+			data = append(data, []byte(fmt.Sprintf("<br /><code>%s</code>", p))...)
 			w.teams <- data
 		} else {
-			w.teams <- []byte(fmt.Sprintf("<p>%s</p>", p))
+			w.teams <- []byte(fmt.Sprintf("<code>%s</code>", p))
 		}
 	}
 
