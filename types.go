@@ -22,17 +22,19 @@ type LokiConfig struct {
 	Path      string
 	Headers   http.Header
 	Labels    map[string]string
-	BasicAuth struct {
-		Username string
-		Password string
-	}
-	Client *http.Client
+	BasicAuth BasicAuth
+	Client    *http.Client
 }
 
 type TeamsConfig struct {
 	Title   string
 	Webhook string
 	Client  *http.Client
+}
+
+type BasicAuth struct {
+	Username string
+	Password string
 }
 
 type lokiWriter struct {
