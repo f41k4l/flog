@@ -5,7 +5,7 @@
 # Usage
 
 ```go
-logger, err := flog.New(flog.Config{
+logger := flog.New(flog.Config{
   Output: os.Stdout,
   Loki: flog.LokiConfig{
     URL:  "http://localhost:3100",
@@ -22,9 +22,6 @@ logger, err := flog.New(flog.Config{
     Webhook: "https://example.webhook.office.com/...",
   },
 })
-if err != nil {
-  panic(err)
-}
 defer logger.Close()
 
 log.SetOutput(logger)
