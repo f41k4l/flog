@@ -18,11 +18,15 @@ type Config struct {
 }
 
 type LokiConfig struct {
-	URL     string
-	Path    string
-	Headers http.Header
-	Labels  map[string]string
-	Client  *http.Client
+	URL       string
+	Path      string
+	Headers   http.Header
+	Labels    map[string]string
+	BasicAuth struct {
+		Username string
+		Password string
+	}
+	Client *http.Client
 }
 
 type TeamsConfig struct {

@@ -60,6 +60,10 @@ func (config *LokiConfig) writeToLoki(p [][]string) (err error) {
 		return
 	}
 
+	if config.BasicAuth.Username != "" && config.BasicAuth.Password != "" {
+		req.SetBasicAuth(config.BasicAuth.Username, config.BasicAuth.Password)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	if config.Headers != nil {
 		for k, v := range config.Headers {
