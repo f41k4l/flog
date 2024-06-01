@@ -33,7 +33,8 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 		w.teams <- fmt.Sprintf("<pre>%s</pre>", p)
 	}
 
-	n, err = w.output.Write(p)
+	// Write to default output
+	n, err = w.defaultOutput.Write(p)
 	if err != nil {
 		return
 	}
@@ -45,7 +46,7 @@ func (config *LokiConfig) writeToLoki(p [][]string) (err error) {
 
 	buffer := new(bytes.Buffer)
 	err = json.NewEncoder(buffer).Encode(lokiWriter{
-		Streams: []stream{{
+		Streams: []lokiStream{{
 			Stream: config.Labels,
 			Values: p,
 		}},

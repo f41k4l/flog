@@ -6,9 +6,9 @@ import (
 )
 
 type Writer struct {
-	output io.Writer
-	loki   chan [][]string
-	teams  chan string
+	defaultOutput io.Writer
+	loki          chan [][]string
+	teams         chan string
 }
 
 type Config struct {
@@ -32,10 +32,10 @@ type TeamsConfig struct {
 }
 
 type lokiWriter struct {
-	Streams []stream `json:"streams"`
+	Streams []lokiStream `json:"streams"`
 }
 
-type stream struct {
+type lokiStream struct {
 	Stream map[string]string `json:"stream"`
 	Values [][]string        `json:"values"`
 }

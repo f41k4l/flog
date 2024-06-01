@@ -10,23 +10,25 @@ import (
 //
 // Exxample usage:
 //
-//	    l, err := flog.New(flog.Config{
-//	        Output: os.Stdout,
-//	        Loki: flog.LokiConfig{
-//	            URL:  "http://localhost:3100",
-//	            Path: "/loki/api/v1/push",
-//	            Labels: map[string]string{
-//	                "app": "myapp",
-//	            },
-//	        },
-//	    })
-//	    if err != nil {
-//	        panic(err)
-//	    }
-//	    defer l.Close()
+//	l, err := flog.New(flog.Config{
+//		Output: os.Stdout,
+//		Loki: flog.LokiConfig{
+//			URL:  "http://localhost:3100",
+//			Path: "/loki/api/v1/push",
+//			Labels: map[string]string{
+//				"app": "myapp",
+//			},
+//		},
+//	})
 //
-//			log.SetOutput(l)
-//			log.SetReportTimestamp(false)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	defer l.Close()
+//
+//	log.SetOutput(l)
+//	log.SetReportTimestamp(false)
 func New(config Config) (*Writer, error) {
 	output := config.Output
 	if output == nil {
@@ -48,7 +50,7 @@ func New(config Config) (*Writer, error) {
 					default:
 					}
 					close(queue)
-					_, _ = out.Write([]byte("[LOKI LOG FAILED] " + err.Error() + "\n"))
+					_, _ = out.Write([]byte("[WRITING LOKI LOG FAILED] " + err.Error() + "\n"))
 					break
 				}
 			}
@@ -72,7 +74,7 @@ func New(config Config) (*Writer, error) {
 					default:
 					}
 					close(queue)
-					_, _ = out.Write([]byte("[TEAMS LOG FAILED] " + err.Error() + "\n"))
+					_, _ = out.Write([]byte("[WRITING TEAMS LOG FAILED] " + err.Error() + "\n"))
 					break
 				}
 			}
@@ -82,8 +84,8 @@ func New(config Config) (*Writer, error) {
 	}
 
 	return &Writer{
-		output: output,
-		loki:   loki,
-		teams:  teams,
+		defaultOutput: output,
+		loki:          loki,
+		teams:         teams,
 	}, nil
 }
